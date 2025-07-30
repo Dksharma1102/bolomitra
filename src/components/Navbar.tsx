@@ -1,9 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
+import { getAuth, onAuthStateChanged, User as FirebaseUser, signOut } from "firebase/auth";
+import LoginForm from './LoginForm';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,6 +29,15 @@ const Navbar = () => {
     const element = document.getElementById(sectionId);
     element?.scrollIntoView({ behavior: 'smooth' });
     setIsMobileMenuOpen(false);
+  };
+
+  const handleLogout = async () => {
+    const auth = getAuth();
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (
@@ -33,7 +54,7 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8">
+          <div className="hidden md:flex items-center space-x-8">
             {['Home', 'About', 'Services', 'Contact'].map((item) => (
               <button
                 key={item}
@@ -43,6 +64,27 @@ const Navbar = () => {
                 {item}
               </button>
             ))}
+            
+            {/* Auth Button */}
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-slate-600 text-sm">Welcome, {user.displayName || user.email}</span>
+                <button
+                  onClick={handleLogout}
+                  className="bg-coral-pink hover:bg-coral-pink/90 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowLoginForm(true)}
+                className="bg-coral-pink hover:bg-coral-pink/90 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+              >
+                <User size={16} />
+                <span>Login</span>
+              </button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -66,9 +108,41 @@ const Navbar = () => {
                 {item}
               </button>
             ))}
+            
+            {/* Mobile Auth Button */}
+            {user ? (
+              <div className="border-t border-slate-200 mt-4 pt-4">
+                <div className="text-slate-600 text-sm mb-2">Welcome, {user.displayName || user.email}</div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full bg-coral-pink hover:bg-coral-pink/90 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="border-t border-slate-200 mt-4 pt-4">
+                <button
+                  onClick={() => setShowLoginForm(true)}
+                  className="w-full bg-coral-pink hover:bg-coral-pink/90 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+                >
+                  <User size={16} />
+                  <span>Login</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Login Form Modal */}
+      <LoginForm 
+        isOpen={showLoginForm} 
+        onClose={() => setShowLoginForm(false)} 
+        onLogin={(userData) => {
+          setShowLoginForm(false);
+        }}
+      />
     </nav>
   );
 };

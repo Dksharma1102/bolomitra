@@ -2,11 +2,28 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle, Heart } from 'lucide-react';
 import { useChatbot } from '../context/ChatbotContext';
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { useState, useEffect } from 'react';
+import LoginForm from './LoginForm';
 
 const Hero = () => {
   const { openAvatarSelection } = useChatbot();
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleStartTalking = () => {
+    if (!user) {
+      setShowLoginForm(true);
+      return;
+    }
     openAvatarSelection();
     // Smooth scroll to top to ensure avatar selection is visible
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -88,6 +105,13 @@ const Hero = () => {
             >
         <p className="text-sm font-medium">"I'm here for you! 💕"</p>
           </motion.div>
+        <LoginForm 
+          isOpen={showLoginForm} 
+          onClose={() => setShowLoginForm(false)} 
+          onLogin={(userData) => {
+            setShowLoginForm(false);
+          }}
+        />
     </section>
   );
 };

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Lock, ArrowLeft } from 'lucide-react';
 import { useChatbot } from '../context/ChatbotContext';
 import VoiceChatbot from './VoiceChatbot';
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import LoginForm from './LoginForm';
 
 interface Avatar {
   id: string;
@@ -16,35 +18,27 @@ interface Avatar {
 const avatars: Avatar[] = [
   {
     id: '1',
-    name: 'Priya',
+    name: 'Aria',
     image: 'https://images.pexels.com/photos/3757942/pexels-photo-3757942.jpeg?auto=compress&cs=tinysrgb&w=300',
-    personality: 'Warm and nurturing, like a caring friend who always listens',
-    voice: 'Soft and comforting',
+    personality: 'Cheerful & Optimistic',
+    voice: 'Cheerful and light-hearted',
     color: 'coral-pink'
   },
   {
     id: '2',
-    name: 'Arjun',
-    image: 'https://images.pexels.com/photos/4946515/pexels-photo-4946515.jpeg?auto=compress&cs=tinysrgb&w=300',
-    personality: 'Energetic and motivating, perfect for cheering you up',
-    voice: 'Enthusiastic and encouraging',
-    color: 'mint-green'
-  },
-  {
-    id: '3',
     name: 'Maya',
-    image: 'https://images.pexels.com/photos/1382731/pexels-photo-1382731.jpeg?auto=compress&cs=tinysrgb&w=300',
-    personality: 'Wise and thoughtful, great for deep conversations',
-    voice: 'Calm and reflective',
+    image: 'https://images.pexels.com/photos/4946515/pexels-photo-4946515.jpeg?auto=compress&cs=tinysrgb&w=300',
+    personality: 'Calm & Thoughtful',
+    voice: 'Calm and soothing',
     color: 'dusty-teal'
   },
   {
-    id: '4',
-    name: 'Rohan',
-    image: 'https://images.pexels.com/photos/1858175/pexels-photo-1858175.jpeg?auto=compress&cs=tinysrgb&w=300',
-    personality: 'Fun and playful, always ready for a good laugh',
-    voice: 'Cheerful and light-hearted',
-    color: 'coral-pink'
+    id: '3',
+    name: 'Zara',
+    image: 'https://images.pexels.com/photos/1382731/pexels-photo-1382731.jpeg?auto=compress&cs=tinysrgb&w=300',
+    personality: 'Energetic & Fun',
+    voice: 'Energetic and enthusiastic',
+    color: 'mint-green'
   }
 ];
 
@@ -52,24 +46,85 @@ const AvatarSelection: React.FC = () => {
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
   const [showVoiceChat, setShowVoiceChat] = useState(false);
   const { showAvatarSelection, closeAvatarSelection } = useChatbot();
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+
+  React.useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   if (!showAvatarSelection) {
     return null;
   }
 
+  // If not authenticated, show login prompt
+  if (!user) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl text-center"
+        >
+          <div className="mb-6">
+            <Lock size={48} className="mx-auto text-coral-pink mb-4" />
+            <h2 className="text-2xl font-bold text-slate-700 mb-2">Authentication Required</h2>
+            <p className="text-slate-600">Please log in to select your AI companion</p>
+          </div>
+          
+          <div className="space-y-4">
+            <button
+              onClick={() => setShowLoginForm(true)}
+              className="w-full bg-coral-pink hover:bg-coral-pink/90 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
+            >
+              Login
+            </button>
+            <button
+              onClick={closeAvatarSelection}
+              className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-semibold transition-colors duration-200"
+            >
+              Cancel
+            </button>
+          </div>
+
+          <LoginForm 
+            isOpen={showLoginForm} 
+            onClose={() => setShowLoginForm(false)} 
+            onLogin={(userData) => {
+              setShowLoginForm(false);
+            }}
+          />
+        </motion.div>
+      </div>
+    );
+  }
+
   if (showVoiceChat && selectedAvatar) {
-    return <VoiceChatbot selectedAvatar={selectedAvatar} />;
+    return (
+      <VoiceChatbot 
+        selectedAvatar={selectedAvatar} 
+        key={selectedAvatar.id} // Add key to force re-render
+      />
+    );
   }
 
   const handleAvatarSelect = (avatar: Avatar) => {
+    console.log('Avatar selected:', avatar.name);
     setSelectedAvatar(avatar);
     // Transition to voice chat after a brief delay
     setTimeout(() => {
+      console.log('Transitioning to voice chat...');
       setShowVoiceChat(true);
-    }, 1500);
+    }, 1000); // Reduced delay
   };
 
   const goBack = () => {
+    console.log('Going back to avatar selection');
     setSelectedAvatar(null);
     setShowVoiceChat(false);
   };

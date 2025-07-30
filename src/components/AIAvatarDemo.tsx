@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { MessageCircle, Heart, Mic, Camera, Settings } from 'lucide-react';
 import LoginForm from './LoginForm';
 import HugMode from './HugMode';
 import { useChatbot } from '../context/ChatbotContext';
+import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 
 const AIAvatarDemo = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [showHugMode, setShowHugMode] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
   const { openAvatarSelection, openChatbot } = useChatbot();
+  const [user, setUser] = useState<User | null>(null);
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.2,
@@ -50,8 +51,15 @@ const AIAvatarDemo = () => {
     return () => clearInterval(interval);
   }, [steps.length]);
 
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleLogin = (data: any) => {
-    setUserData(data);
     setShowLoginForm(false);
   };
 
@@ -70,6 +78,14 @@ const AIAvatarDemo = () => {
   };
 
   const triggerHugMode = () => {
+    console.log('Hug Mode triggered. User state:', user);
+    if (!user) {
+      console.log('User not authenticated, showing login form');
+      alert("Please log in to use Hug Mode.");
+      setShowLoginForm(true);
+      return;
+    }
+    console.log('User authenticated, opening Hug Mode');
     setShowHugMode(true);
   };
 
@@ -247,9 +263,14 @@ const AIAvatarDemo = () => {
               
               <button
                 onClick={triggerHugMode}
-                className="w-full bg-gradient-to-r from-coral-pink to-dusty-teal text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300"
+                className={`w-full py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 ${
+                  user 
+                    ? 'bg-gradient-to-r from-coral-pink to-dusty-teal text-white' 
+                    : 'bg-gray-400 text-white cursor-not-allowed'
+                }`}
+                disabled={!user}
               >
-                Try Hug Mode 🤗
+                {user ? 'Try Hug Mode 🤗' : 'Login Required for Hug Mode 🔒'}
               </button>
             </div>
           </motion.div>

@@ -14,7 +14,6 @@ interface Message {
 
 interface VoiceChatbotProps {
   selectedAvatar: {
-    id: string;
     name: string;
     image: string;
     personality: string;
@@ -24,6 +23,8 @@ interface VoiceChatbotProps {
 }
 
 const VoiceChatbot: React.FC<VoiceChatbotProps> = ({ selectedAvatar }) => {
+  console.log('VoiceChatbot rendering with avatar:', selectedAvatar.name);
+  
   const [isOpen, setIsOpen] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -43,6 +44,25 @@ const VoiceChatbot: React.FC<VoiceChatbotProps> = ({ selectedAvatar }) => {
   const recognitionRef = useRef<any>(null);
   const synthesisRef = useRef<SpeechSynthesis | null>(null);
   const { closeAvatarSelection } = useChatbot();
+
+  // Remove authentication check since user is already authenticated
+  // const [user, setUser] = useState<FirebaseUser | null>(null);
+  // const [showLoginForm, setShowLoginForm] = useState(false);
+
+  // useEffect(() => {
+  //   const auth = getAuth();
+  //   const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+  //     setUser(firebaseUser);
+  //   });
+  //   return () => unsubscribe();
+  // }, []);
+
+  // Remove authentication check - user is already authenticated
+  // if (isOpen && !user) {
+  //   return (
+  //     // ... authentication modal
+  //   );
+  // }
 
   // Initialize Gemini AI
   const apiKey = 'AIzaSyAMWFagqRGqiRQ726YDoZr8VDbqxMXrLAc';

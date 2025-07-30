@@ -14,12 +14,13 @@ const ContactSection = () => {
     threshold: 0.2,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log('Form submitted:', formData);
-    alert('Message sent! We\'ll get back to you soon.');
-    setFormData({ name: '', email: '', message: '' });
+    const subject = encodeURIComponent("Contact from Bolo Mitra");
+    const body = encodeURIComponent(
+      `Name: ${formData.name}\nEmail: ${formData.email}\nMessage: ${formData.message}`
+    );
+    window.location.href = `mailto:bolomitra3@gmail.com?subject=${subject}&body=${body}`;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, X, Minimize2, Maximize2, Mic } from 'lucide-react';
+import { Send, Bot, User, X, Minimize2, Maximize2, Mic, Lock } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { useChatbot } from '../context/ChatbotContext';
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import LoginForm from './LoginForm';
 
 interface Message {
   id: string;
@@ -40,6 +42,22 @@ const Chatbot: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+
+  const languageOptions = [
+    'English',
+    'Hindi',
+    'Spanish',
+    'French',
+    'German',
+    'Chinese',
+    'Japanese',
+    'Russian',
+    'Arabic',
+    'Portuguese',
+  ];
 
   // Initialize Gemini AI with error handling
   const apiKey = 'AIzaSyAMWFagqRGqiRQ726YDoZr8VDbqxMXrLAc';
@@ -61,6 +79,67 @@ const Chatbot: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // If not authenticated and chatbot is open, show login prompt
+  if (isOpen && !user) {
+    return (
+      <div className="fixed bottom-4 right-4 z-50">
+        <div className="bg-white rounded-lg shadow-2xl border border-gray-200 w-96 max-h-[500px] overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Lock size={20} />
+              <span className="font-semibold">Authentication Required</span>
+            </div>
+            <button
+              onClick={closeChatbot}
+              className="hover:bg-white/20 p-1 rounded transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Login Content */}
+          <div className="p-6 text-center">
+            <Lock size={48} className="mx-auto text-coral-pink mb-4" />
+            <h3 className="text-xl font-bold text-slate-700 mb-2">Login Required</h3>
+            <p className="text-slate-600 mb-6">Please log in to access the AI chatbot</p>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => setShowLoginForm(true)}
+                className="w-full bg-coral-pink hover:bg-coral-pink/90 text-white py-3 rounded-xl font-semibold transition-colors duration-200"
+              >
+                Login
+              </button>
+              <button
+                onClick={closeChatbot}
+                className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-semibold transition-colors duration-200"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <LoginForm 
+          isOpen={showLoginForm} 
+          onClose={() => setShowLoginForm(false)} 
+          onLogin={(userData) => {
+            setShowLoginForm(false);
+          }}
+        />
+      </div>
+    );
+  }
 
   const handleSendMessage = async (messageText?: string) => {
     const textToSend = messageText || inputValue.trim();
@@ -88,8 +167,11 @@ const Chatbot: React.FC = () => {
         throw new Error('API_NOT_AVAILABLE');
       }
       
-      // Send message to Gemini with better error handling
-      const result = await model.generateContent(currentInput);
+      // Prepend language instruction to prompt
+      const prompt = selectedLanguage === 'English'
+        ? currentInput
+        : `Please answer in ${selectedLanguage}: ${currentInput}`;
+      const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
 
@@ -242,6 +324,18 @@ const Chatbot: React.FC = () => {
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
+      {/* Language Selector */}
+      <div className="mb-2 flex justify-end">
+        <select
+          value={selectedLanguage}
+          onChange={e => setSelectedLanguage(e.target.value)}
+          className="border rounded px-2 py-1 text-sm"
+        >
+          {languageOptions.map(lang => (
+            <option key={lang} value={lang}>{lang}</option>
+          ))}
+        </select>
+      </div>
       <div className={`bg-white rounded-lg shadow-2xl border border-gray-200 transition-all duration-300 ${
         isMinimized ? 'w-80 h-12' : 'w-96 h-[500px]'
       }`}>
