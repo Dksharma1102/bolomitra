@@ -19,7 +19,7 @@ const TeamSection = () => {
     },
     {
       name: 'Deeshant',
-      role: 'Co-Founder & Main Tech Leader',
+      role: 'Founder & Main Tech Leader',
       image: '/team-member-2.jpg',
       bio: 'Gaining and exploring all tech areas with curiosity and collecting all informations about new Tech India.',
       linkedin: 'https://www.linkedin.com/in/deekshantsharma',
